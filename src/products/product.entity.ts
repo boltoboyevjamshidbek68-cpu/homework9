@@ -1,6 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Brand } from 'src/brand/brand.entity';
+import { Category } from 'src/category/category.entity';
 
-@Entity()
+@Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
   id: number;
@@ -8,11 +10,11 @@ export class Product {
   @Column()
   name: string;
 
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column("text", { array: true, nullable: true })
-  images: string[]; 
+  @Column('text', { array: true, nullable: true })
+  images: string[];
 
   @Column({ nullable: true })
   description: string;
@@ -20,9 +22,23 @@ export class Product {
   @Column({ default: 0 })
   stock: number;
 
-  @Column({ nullable: true })
-  categoryId: number;
+  @ManyToOne(() => Category, (category) => category.products, { nullable: true, eager: true })
+  @JoinColumn({ name: 'categoryId' })
+  category?: Category;
 
   @Column({ nullable: true })
-  brandId: number;
+  categoryId?: number;
+
+  @ManyToOne(() => Brand, (brand) => brand.products, { nullable: true, eager: true })
+  @JoinColumn({ name: 'brandId' })
+  brand?: Brand;
+
+  @Column({ nullable: true })
+  brandId?: number;
+
+  @Column({ nullable: true })
+  memory?: number;
+
+  @Column({ default: 0 })
+  rating: number;
 }

@@ -1,27 +1,23 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToOne,
-  JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Order } from '../order/order.entity';
-
-export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed',
-}
+import { PaymentStatus } from './payment-status.enum';
 
 @Entity('payments')
 export class Payment {
+  find(arg0: (p: any) => boolean) {
+    throw new Error('Method not implemented.');
+  }
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ManyToOne(() => Order, (order) => order.payment, { eager: false, onDelete: 'CASCADE' })
+  order: Order;
+
   @Column()
-  method: string; 
+  method: string;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  amount: number;
 
   @Column({
     type: 'enum',
@@ -29,13 +25,6 @@ export class Payment {
     default: PaymentStatus.PENDING,
   })
   status: PaymentStatus;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount: number;
-
-  @OneToOne(() => Order, (order) => order.payment, { onDelete: 'CASCADE' })
-  @JoinColumn()
-  order: Order;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -39,4 +39,5 @@ export class User {
   })
   roles: Role[];    
   orders: any;
+  addresses: any;
 }

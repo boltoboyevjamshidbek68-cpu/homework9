@@ -1,11 +1,24 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ProductsService } from './product.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Product } from './product.entity';
+import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private prodService: ProductsService) {}
+  constructor(private readonly prodService: ProductsService) {}
 
   @Get()
   findAll(@Query() query: any) {
@@ -13,25 +26,27 @@ export class ProductsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Product | null> {
-    return this.prodService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.prodService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() data: Partial<Product>) {
-    return this.prodService.create(data);
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  create(@Body() dto: CreateProductDto) {
+    return this.prodService.create(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Partial<Product>) {
-    return this.prodService.update(+id, data);
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
+    return this.prodService.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.prodService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.prodService.remove(id);
   }
 }

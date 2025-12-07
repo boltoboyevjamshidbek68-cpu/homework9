@@ -1,34 +1,53 @@
-// categories.controller.ts
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  ParseIntPipe,
+  NotFoundException,
+} from '@nestjs/common';
 import { CategoriesService } from './category.service';
 import { Category } from './category.entity';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('categories')
 export class CategoriesController {
   constructor(private catService: CategoriesService) {}
 
   @Get()
-  findAll(): Promise<Category[]> {
+  async findAll(): Promise<Category[]> {
     return this.catService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Category | null> {
-    return this.catService.findOne(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Category> {
+    const category = await this.catService.findOne(id);
+    if (!category) throw new NotFoundException('Category not found');
+    return category;
   }
 
   @Post()
-  create(@Body() data: Partial<Category>): Promise<Category> {
-    return this.catService.create(data);
+  async create(@Body() dto: CreateCategoryDto): Promise<Category> {
+    return this.catService.create(dto);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Partial<Category>): Promise<Category | null> {
-    return this.catService.update(+id, data);
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCategoryDto,
+  ): Promise<Category> {
+    const updated = await this.catService.update(id, dto);
+    if (!updated) throw new NotFoundException('Category not found');
+    return updated;
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.catService.remove(+id);
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<{ deleted: true }> {
+    await this.catService.remove(id);
+    return { deleted: true };
   }
 }

@@ -1,4 +1,3 @@
-// categories.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from './category.entity';

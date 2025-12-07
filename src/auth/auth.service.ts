@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
@@ -9,21 +14,34 @@ import { JwtPayload } from './jwt.payload';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService, private cartService: CartService) {}
+  constructor(
+    private usersService: UsersService,
+    private cartService: CartService,
+  ) { }
 
-  private readonly jwtSecret = 'my_super_secret_key';
+  private readonly jwtSecret = process.env.JWT_SECRET || 'super_secret_key';
 
-  async register(email: string, password: string, name: string | undefined, dto: RegisterDto) {
-    const hashed = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashed,
-      roles: [{ id: 2, name: 'user', users: [] }],
-    });
-    return user;
+
+  async register(dto: RegisterDto) {
+    try {
+      const exist = await this.usersService.findByEmail(dto.email);
+      if (exist) throw new BadRequestException('Email already registered');
+
+      const hashed = await bcrypt.hash(dto.password, 10);
+
+      const user = await this.usersService.create({
+        ...dto,
+        password: hashed,
+        roles: [{ id: 2, name: 'user', users: [] }],
+      });
+
+      return user;
+    } catch (err) {
+      throw new InternalServerErrorException(err.message);
+    }
   }
 
-  async login(email: string, password: string, dto: LoginDto & { mergeItems?: any[] }) {
+  async login(dto: LoginDto & { mergeItems?: any[] }) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Email not found');
 
@@ -33,26 +51,26 @@ export class AuthService {
     const payload: JwtPayload = {
       id: user.id,
       email: user.email,
-      roles: user.roles.map((r) => r.name),
+      roles: user.roles?.map((r) => r.name) || [],
     };
 
-    const token = jwt.sign(payload, this.jwtSecret, { expiresIn: '1h' });
+    const accessToken = jwt.sign(payload, this.jwtSecret, {
+      expiresIn: '1h',
+    });
 
-    if (dto.mergeItems && Array.isArray(dto.mergeItems) && dto.mergeItems.length) {
+    if (dto.mergeItems && Array.isArray(dto.mergeItems)) {
       try {
         await this.cartService.mergeAnonymousCart(user.id, dto.mergeItems);
-      } catch (e) {
-      }
+      } catch { }
     }
 
-    return { access_token: token };
+    return { access_token: accessToken };
   }
 
   async verifyToken(token: string): Promise<JwtPayload> {
     try {
-      const decoded = jwt.verify(token, this.jwtSecret) as JwtPayload;
-      return decoded;
-    } catch (e) {
+      return jwt.verify(token, this.jwtSecret) as JwtPayload;
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

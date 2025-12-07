@@ -10,7 +10,7 @@ import {
 import { User } from 'src/users/users.entity';
 import { OrderItem } from './order-item.entity';
 import { Payment } from 'src/payment/payment.entity';
-import { Address } from 'src/users/address.entity';
+import { Address } from 'src/users/address/address.entity';
 
 @Entity()
 export class Order {
